@@ -104,7 +104,6 @@ async def process_user_input():
 
 # ─────────────────────────────
 # 입력창
-# ─────────────────────────────
 query = st.chat_input("가맹점 이름을 입력하세요")
 if query:
     st.session_state.messages.append(HumanMessage(content=query))
