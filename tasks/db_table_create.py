@@ -1,5 +1,4 @@
-# tasks/ddl_create.py
-from .dbio import exec_sql_script
+from .dbconnect import exec_sql_script
 
 DDL = r"""
 USE data_llm;
