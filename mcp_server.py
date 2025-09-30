@@ -5,6 +5,8 @@ from typing import Dict, Any, Optional
 import pandas as pd
 from fastmcp.server import FastMCP
 
+# git commit ex) mcp_server.py
+
 # 전역 DF
 DF: Optional[pd.DataFrame] = None
 
