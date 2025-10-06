@@ -162,10 +162,10 @@ CREATE TABLE mat_age_keyword_score (
 
 DROP TABLE IF EXISTS mat_prompt_bundle;
 CREATE TABLE mat_prompt_bundle (
-  mct_id VARCHAR(64),
-  ym CHAR(6),
-  version VARCHAR(32),
-  bundle JSON,
+  mct_id   VARCHAR(64),
+  ym       CHAR(6),
+  version  VARCHAR(32),
+  bundle   JSON,
   PRIMARY KEY (mct_id, ym, version)
 );
 """
