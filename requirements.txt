@@ -2,15 +2,16 @@ streamlit>=1.38.0
 google-generativeai>=0.8.0
 pandas>=2.2.0
 
-# MCP (Model Context Protocol)
-mcp>=1.13.1
-fastmcp>=2.11.0
+# Backend Web Server (FastAPI)
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+httpx>=0.27.0
+pydantic>=2.7.0
 
 # LangChain
 langchain>=0.1.0
 langchain-core>=0.1.0
 langchain-google-genai>=1.0.0
-langchain-mcp-adapters>=0.1.0
 langgraph>=0.1.0
 
 # 이미지 처리

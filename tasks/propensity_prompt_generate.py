@@ -1,3 +1,4 @@
+
 # tasks/propensity_prompt_generate.py
 from __future__ import annotations
 import sys, pathlib, json, argparse, shutil, subprocess, datetime, re
@@ -229,8 +230,8 @@ def write_cluster_assets(out_dir: pathlib.Path, k: int, cid: int, prof: dict[str
 suppressWarnings(suppressMessages({{
   library(ggplot2); library(scales); library(dplyr)
 }}))
-age_path <- "{age_csv.as_posix()}"; aud_path <- "{aud_csv.as_posix()}"
-png_age <- "{png1.as_posix()}";    png_aud <- "{png2.as_posix()}"
+age_path <- "{age_csv.name}"; aud_path <- "{aud_csv.name}"
+png_age <- "{png1.name}";    png_aud <- "{png2.name}"
 
 # Age Mix
 age_df <- read.csv(age_path, encoding="UTF-8")
@@ -270,13 +271,23 @@ ggsave(png_aud, p2, width=8, height=5, dpi=150)
     rscript = shutil.which("Rscript")
     if rscript:
         try:
-            subprocess.run([rscript, r_script.as_posix()], check=True)
+            subprocess.run(
+                [rscript, r_script.name],
+                check=True,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=60,
+                cwd=out_dir
+            )
+        except subprocess.TimeoutExpired:
+            print(f"!!! R SCRIPT TIMEOUT EXPIRED (60s) in {out_dir} !!!")
         except subprocess.CalledProcessError:
-            pass
+            print(f"!!! R SCRIPT FAILED WITH AN ERROR in {out_dir} !!!")
 
     out = {"age_csv": age_csv, "aud_csv": aud_csv, "r_script": r_script}
-    if png1.exists(): out["age_png"] = png1
-    if png2.exists(): out["aud_png"] = png2
+    if png1.exists(): out["age_png"] = str(png1.resolve())
+    if png2.exists(): out["aud_png"] = str(png2.resolve())
     return out
 
 # ---- 저장
@@ -284,6 +295,7 @@ def save_bundle(cx, mct_id: str, ym: str, version: str, payload: dict):
     cx.execute(text("""REPLACE INTO mat_prompt_bundle (mct_id, ym, version, bundle)
                        VALUES (:m, :ym, :v, :b)"""),
                {"m": mct_id, "ym": ym, "v": version, "b": json.dumps(payload, ensure_ascii=False)})
+
 
 # ---- 메인 로직
 def generate_propensity_prompts(k: int|None, top_media: int, top_kw: int, make_plots: bool, assets_dir: str,
@@ -309,7 +321,7 @@ def generate_propensity_prompts(k: int|None, top_media: int, top_kw: int, make_p
 
     if per_store and not mct_id:
         sectors, areas, sectors_sorted, areas_sorted = load_vocab(eng)
-        if not area:   area   = longest_match(text_norm, areas_sorted)
+        if not area:   area = longest_match(text_norm, areas_sorted)
         if not sector: sector = longest_match(text_norm, sectors_sorted)
 
     with eng.begin() as cx:
@@ -393,7 +405,7 @@ def generate_propensity_prompts(k: int|None, top_media: int, top_kw: int, make_p
                 ym_now = datetime.datetime.now().strftime("%Y%m")
                 save_bundle(cx, mct_id=synthetic_id, ym=ym_now, version=AFFINITY_VERSION, payload=bundle)
                 print(f"✅ per-store prompt saved (group: {ctx_title})\n• target k = {k}")
-                return
+                return bundle
 
     # 3) 폴백: 클러스터 평균
     prof_df = pd.read_sql(SQL_PROFILE, get_engine(), params={"k": k})
