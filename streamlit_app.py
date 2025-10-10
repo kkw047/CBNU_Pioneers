@@ -3,7 +3,6 @@ import os
 os.environ["GRPC_VERBOSITY"] = "ERROR"
 os.environ["GRPC_TRACE"] = ""
 
-import sys
 import asyncio
 from pathlib import Path
 from typing import Optional
@@ -42,7 +41,6 @@ def is_server_running():
 # 앱 전체에서 사용될 상수들
 # ==============================================================================
 
-# 백엔드가 모든 지시를 하므로 단순한 역할만 부여
 system_prompt = (
     "당신은 대한민국 소상공인을 위한 최고의 마케팅 전문가입니다. "
     "제공된 데이터 분석 요약 프롬프트를 바탕으로, 사용자가 이해하기 쉬운 최종 보고서를 작성합니다."
@@ -74,6 +72,7 @@ def main_app():
 
     def clear_chat_history():
         st.session_state.messages = [SystemMessage(content=system_prompt), AIMessage(content=greeting)]
+        st.session_state.analysis_complete = False
 
     with st.sidebar:
         img = load_image("shc_ci_basic_00.png")
@@ -98,14 +97,14 @@ def main_app():
             continue
         role = "user" if isinstance(m, HumanMessage) else "assistant"
         with st.chat_message(role):
-            st.write(m.content)
+            st.markdown(m.content.replace('\n', '  \n'))
 
     def render_chat_message(role: str, content: str):
         with st.chat_message(role):
             st.markdown(str(content).replace("<br>", "  \n"))
 
     llm = ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash",
+        model="gemini-2.5-flash",  # 모델명을 최신 버전으로 변경하는 것을 권장합니다.
         google_api_key=GOOGLE_API_KEY,
         temperature=0.1,
     )
@@ -132,7 +131,10 @@ def main_app():
 
             generated_prompt = analysis_result.get("prompt")
             if generated_prompt:
-                messages = [HumanMessage(content=generated_prompt)]
+                messages = [
+                    SystemMessage(content=system_prompt),
+                    HumanMessage(content=generated_prompt)
+                ]
                 llm_response = await llm.ainvoke(messages)
                 output["reply"] = llm_response.content
             else:
@@ -145,47 +147,73 @@ def main_app():
 
         return output
 
-    query = st.chat_input("가맹점 상호명을 입력하세요...")
+    if "analysis_complete" not in st.session_state:
+        st.session_state.analysis_complete = False
+
+    query = st.chat_input("가맹점 상호명을 입력하거나 대화를 이어가세요...")
     if query:
+        # 사용자 메시지를 기록하고 화면에 표시
         st.session_state.messages.append(HumanMessage(content=query))
-        render_chat_message("user", query)
-        with st.spinner("사장님의 가게를 분석하고 마케팅 전략을 수립하는 중입니다..."):
-            result_data = asyncio.run(process_user_input(query))
-            with st.chat_message("assistant"):
-                if result_data.get("error"):
-                    error_msg = result_data["error"]
-                    st.error(error_msg)
-                    st.session_state.messages.append(AIMessage(content=error_msg))
-                else:
-                    reply_text = result_data.get("reply", "응답을 생성하지 못했습니다.")
-                    image_paths = result_data.get("images", [])
+        with st.chat_message("user"):
+            st.markdown(query)
 
-                    split_keyword_base = "그래프 요약"
-                    found_split = False
-                    for keyword_variant in [
-                        f"**{split_keyword_base}:**", f"**{split_keyword_base}**",
-                        f"{split_keyword_base}:", split_keyword_base
-                    ]:
-                        if keyword_variant in reply_text:
-                            parts = reply_text.split(keyword_variant, 1)
-                            title_and_before = parts[0] + keyword_variant
-                            explanation_text = parts[1]
-                            found_split = True
-                            break
-
-                    if found_split and image_paths:
-                        st.markdown(title_and_before)
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            if len(image_paths) > 0 and Path(image_paths[0]).exists():
-                                st.image(image_paths[0], use_container_width=True, caption="연령 믹스")
-                        with col2:
-                            if len(image_paths) > 1 and Path(image_paths[1]).exists():
-                                st.image(image_paths[1], use_container_width=True, caption="오디언스 신호")
-                        st.markdown(explanation_text)
+        # 1. 첫 분석 요청인 경우 (가맹점명 입력)
+        if not st.session_state.analysis_complete:
+            with st.spinner("사장님의 가게를 분석하고 마케팅 전략을 수립하는 중입니다..."):
+                result_data = asyncio.run(process_user_input(query))
+                with st.chat_message("assistant"):
+                    if result_data.get("error"):
+                        error_msg = result_data["error"]
+                        st.error(error_msg)
+                        st.session_state.messages.append(AIMessage(content=error_msg))
                     else:
-                        st.markdown(reply_text)
-                    st.session_state.messages.append(AIMessage(content=reply_text))
+                        reply_text = result_data.get("reply", "응답을 생성하지 못했습니다.")
+                        image_paths = result_data.get("images", [])
+
+                        # --- 이미지 분리 로직 ---
+                        split_keyword_base = "우리 가게 현황 요약"
+                        found_split = False
+                        for keyword_variant in [
+                            f"### {split_keyword_base}", f"**{split_keyword_base}**", f"{split_keyword_base}", split_keyword_base
+                        ]:
+                            if keyword_variant in reply_text:
+                                parts = reply_text.split(keyword_variant, 1)
+                                st.markdown((parts[0] + keyword_variant).replace('\n', '  \n'))
+                                if image_paths:
+                                    col1, col2 = st.columns(2)
+                                    with col1:
+                                        if len(image_paths) > 0 and Path(image_paths[0]).exists():
+                                            st.image(image_paths[0], use_container_width=True, caption="연령 믹스")
+                                    with col2:
+                                        if len(image_paths) > 1 and Path(image_paths[1]).exists():
+                                            st.image(image_paths[1], use_container_width=True, caption="오디언스 신호")
+                                st.markdown(parts[1].replace('\n', '  \n'))
+                                found_split = True
+                                break
+
+                        if not found_split:
+                            st.markdown(reply_text)
+                            if image_paths:
+                                col1, col2 = st.columns(2)
+                                with col1:
+                                    if len(image_paths) > 0 and Path(image_paths[0]).exists():
+                                        st.image(image_paths[0], use_container_width=True, caption="연령 믹스")
+                                with col2:
+                                    if len(image_paths) > 1 and Path(image_paths[1]).exists():
+                                        st.image(image_paths[1], use_container_width=True, caption="오디언스 신호")
+
+                        st.session_state.messages.append(AIMessage(content=reply_text))
+                        st.session_state.analysis_complete = True
+
+        # 2. 분석 완료 후의 후속 질문인 경우
+        else:
+            with st.spinner("답변을 생성하는 중입니다..."):
+                llm_response = llm.invoke(st.session_state.messages)
+                reply_text = llm_response.content
+
+                with st.chat_message("assistant"):
+                    st.markdown(reply_text.replace('\n', '  \n'))
+                st.session_state.messages.append(AIMessage(content=reply_text))
 
 
 # ==============================================================================
@@ -193,6 +221,9 @@ def main_app():
 # ==============================================================================
 
 if __name__ == '__main__':
+    # 멀티프로세싱 관련 설정 (Windows 사용자를 위해 필요)
+    multiprocessing.freeze_support()
+
     if not is_server_running():
         print("[Main] API server is not running. Starting it now...")
         server_process = multiprocessing.Process(target=run_api_server, daemon=True)
