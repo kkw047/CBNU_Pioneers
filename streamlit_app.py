@@ -50,7 +50,7 @@ greeting = (
     "사장님, 반갑습니다! 저는 사장님의 마케팅 고민을 해결해 드릴 비밀상담소의 AI 컨설턴트입니다. "
     "저의 주 특기는 사람들의 성향을 분석하여 사장님 가게에 필요한 마케팅을 도와드릴 수 있어요."
     "\n 그러기 위해 꼭 필요한 사장님의 가게 정보를 입력해주세요. 주소와 가게명으로도 충분해요"
-    "\n(예: 가게이름, 주소, 업종 등 자세하면 자세할수록 좋아요)"
+    "\n(예: 가게이름, 주소, 업종 등 2가지 이상을 제공해주세요)"
 )
 
 
@@ -177,7 +177,7 @@ def main_app():
     if "analysis_complete" not in st.session_state:
         st.session_state.analysis_complete = False
 
-    query = st.chat_input("가맹점 상호명을 입력하거나 대화를 이어가세요...")
+    query = st.chat_input("주소,가게이름,업종 2가지 이상을 입력하여 대화를 이어나가세요.")
     if query:
         # 사용자 메시지를 기억 장소에 추가
         st.session_state.messages.append(HumanMessage(content=query))

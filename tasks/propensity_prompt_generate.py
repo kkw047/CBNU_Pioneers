@@ -191,7 +191,7 @@ class PromptBuilder:
         - 나이대 수치 기반으로 하위 인원을 끌어들일 광고와 매체 (논리 정연 및 현재 가지고 있는 자료기반으로 사용자가 알기 쉽게 제안)
         - 이 두가지에 기반하여 사장님에게 전달하세요.  
         ### 핵심 마케팅 전략 제안 
-        * **한 줄 컨셉:** (가게의 강점과 타겟 고객을 아우르는 기억하기 쉬운 한 줄 컨셉)
+        * **한 줄 컨셉:** (가게의 강점과 타겟 고객을 아우르는 기억하기 쉬운 한 줄 컨셉, 성향 데이터를 기반으로한 최신 트랜드, 사용자에 따라 다양한 답변
         * **핵심 메시지:** (고객의 마음을 사로잡을 핵심 메시지 3개를 `-` 불릿을 사용하여 목록으로 작성)
         * **기대 효과 및 목표 KPI:**
           - (이 전략을 실행했을 때 예상되는 긍정적인 변화를 설명)
@@ -424,7 +424,7 @@ def generate_propensity_prompts(k: int|None, top_media: int, top_kw: int, make_p
                 return bundle
 
     # 3) 폴백: 클러스터 평균
-    prof_df = pd.read_sql(SQL_PROFILE, get_engine(), params={"k": k})
+    prof_df = pd.read_sql(text(SQL_PROFILE), get_engine(), params={"k": k})
     if prof_df.empty:
         print("mat_cluster_profile 에 데이터가 없습니다. cluster_segments 먼저 실행하세요.")
         return

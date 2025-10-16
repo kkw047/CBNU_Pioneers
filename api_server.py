@@ -59,7 +59,7 @@ def analyze_store(request: QueryRequest):
         else:
             result = {
                 "success": False,
-                "message": f"'{request.user_query}'에 대한 분석 데이터를 찾을 수 없습니다. 다른 가맹점명으로 시도해보세요."
+                "message": f"'{request.user_query}'에 대한 분석 데이터를 찾을 수 없습니다. 더 자세한 정보를 주세요."
             }
             print("[API Server] Analysis failed: No data found.")
 
