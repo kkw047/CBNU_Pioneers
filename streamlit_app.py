@@ -114,16 +114,17 @@ def main_app():
     # --- 사이드바 UI ---
     with st.sidebar:
         st.markdown("<h2 style='text-align:center; font-weight: bold;'>내 가게를 살리는 AI  비밀 상담사</h2>", unsafe_allow_html=True)
-        st.markdown("<p style='text-align:center;'>마케팅 전략을 찾아라!</p>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align:center;'>Team CBNU_Pioneers</p>", unsafe_allow_html=True)
         st.divider()
         if st.button("새로운 분석 시작", use_container_width=True):
             clear_chat_history()
             st.rerun()
         st.divider()
-        st.markdown("<p style='text-align:center; color: #888;'>Team CBNU_Pioneers</p>", unsafe_allow_html=True)
         img = load_image("shc_ci_basic_00.png")
         if img:
             st.image(img, use_container_width=True)
+        st.markdown("<p style='text-align:center; color: #888;'>2025 Big Contest</p>", unsafe_allow_html=True)
+
 
     # --- 메인 대화창 UI ---
     if len(st.session_state.messages) <= 2:
