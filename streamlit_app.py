@@ -137,7 +137,7 @@ def main_app():
     for m in st.session_state.messages:
         if isinstance(m, SystemMessage): continue
         role = "user" if isinstance(m, HumanMessage) else "assistant"
-        avatar = "👤" if role == "user" else "🤖"
+        avatar = ":material/person:" if role == "user" else ":material/smart_toy:"
         with st.chat_message(role, avatar=avatar):
             if isinstance(m, AIMessage) and m.additional_kwargs.get("images"):
                 reply_text = m.content
